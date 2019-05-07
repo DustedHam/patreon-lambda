@@ -1,0 +1,22 @@
+{
+  "name": "patreon-lambda",
+  "version": "1.0.0",
+  "description": "simple lambda to track active patrons",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DustedHam/patreon-lambda.git"
+  },
+  "author": "dustedham",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DustedHam/patreon-lambda/issues"
+  },
+  "homepage": "https://github.com/DustedHam/patreon-lambda#readme",
+  "dependencies": {
+    "aws-sdk": "^2.450.0"
+  }
+}
