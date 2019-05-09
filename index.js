@@ -5,33 +5,34 @@ AWS.config.update({ region: process.env.REGION });
 
 const documentClient = new AWS.DynamoDB.DocumentClient();
 
-exports.myHandler = async function(event, context, callback)
+exports.handler = async function(event, context, callback)
 {
     if (!verifyPatreonHook(event))
     {
-        // Unauthorized 
+        console.log("Unauthorized");
         return {
             statusCode: 401,
+            body: "Unauthorized"
         }
     }
 
-    const body = event.body;
-    const patreonEvent = event.headers['x-patreon-event'];
+    const body = JSON.parse(event.body);
+    const patreonEvent = event.headers['X-Patreon-Event'];
 
     const patron = getPatronData(body);
     if (!patron)
     {
-        // Bad request
         // this ~should~ never happen
+        console.log("Bad request");
         return {
             statusCode: 400,
+            body: "Bad request"
         }
     }
 
     try
     {
         const result = await handlePatreonEvent(patron, patreonEvent);
-
         return {
             statusCode: 200,
             body: "OK"
@@ -40,7 +41,7 @@ exports.myHandler = async function(event, context, callback)
     catch (error)
     {
         // dynamo DB request error;
-        console.log(error);
+        console.error(error);
         return {
             statusCode: 400,
             body: JSON.stringify(error)
@@ -53,74 +54,24 @@ function verifyPatreonHook(event)
     var digest = crypto.createHmac('md5', process.env.PATREON_SECRET)
         .update(event.body)
         .digest('hex');
-    return digest === event.headers['x-patreon-signature'];
+    return digest === event.headers['X-Patreon-Signature'];
 }
 
 async function handlePatreonEvent(patron, event)
 {
-    switch (patreonEvent)
+    switch (event)
     {
-        case "pledges:create":
-            await pledgeCreate(patron)
+        case "members:pledge:create":
+            return await pledgeCreate(patron);
 
-            break;
-        case "pledges:delete":
-            await pledgeDelete(patron);
-
-            break;
+        case "members:pledge:delete":
+            return await pledgeDelete(patron);
     }
-}
-
-function pledgeCreate(patron)
-{
-    return new Promise(function(resolve, reject)
-    {
-        const params = {
-            Item:
-            {
-                "id": patron.id,
-                "vanity": patron.attributes.vanity
-            },
-            TableName: process.env.TABLE_NAME
-        }
-
-        documentClient.put(params, function(err, data)
-        {
-            if (err)
-            {
-                reject(err);
-            }
-            resolve(data);
-        });
-    });
-}
-
-function pledgeDelete(patron)
-{
-    return new Promise(function(resolve, reject)
-    {
-        const params = {
-            Key:
-            {
-                "id": patron.id,
-            },
-            TableName: process.env.TABLE_NAME
-        }
-
-        documentClient.delete(params, function(err, data)
-        {
-            if (err)
-            {
-                reject(err);
-            }
-            resolve(data);
-        });
-    });
 }
 
 function getPatronData(body)
 {
-    let patron = body.data.relationships.patron;
+    let patron = body.data.relationships.user;
     if (!patron)
     {
         // This ~should~ never happen.
@@ -140,4 +91,51 @@ function getPatronData(body)
     // This ~should~ never happen.
     console.error("Missing Patron Data?!", body);
     return;
+}
+
+function pledgeCreate(user)
+{
+    return new Promise(function(resolve, reject)
+    {
+        const params = {
+            Item:
+            {
+                "id": user.id,
+                "vanity": user.attributes.vanity
+            },
+            TableName: process.env.TABLE_NAME
+        }
+
+        documentClient.put(params, function(err, data)
+        {
+            if (err)
+            {
+                reject(err);
+            }
+            resolve(data);
+        });
+    });
+}
+
+function pledgeDelete(user)
+{
+    return new Promise(function(resolve, reject)
+    {
+        const params = {
+            Key:
+            {
+                "id": user.id,
+            },
+            TableName: process.env.TABLE_NAME
+        }
+
+        documentClient.delete(params, function(err, data)
+        {
+            if (err)
+            {
+                reject(err);
+            }
+            resolve(data);
+        });
+    });
 }
