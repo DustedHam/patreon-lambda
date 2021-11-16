@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/DustedHam/patreon-lambda#readme",
   "dependencies": {
-    "aws-sdk": "^2.450.0"
+    "aws-sdk": "^2.814.0"
   }
 }
